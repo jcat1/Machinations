@@ -228,6 +228,122 @@ def system_call_count_feats(tree):
             c['num_system_calls'] += 1
     return c
 
+def counts_per_call(tree):
+    c = Counter()
+    in_all_section = False
+    for el in tree.iter():
+        # ignore everything outside the "all_section" element
+        if el.tag == "all_section" and not in_all_section:
+            in_all_section = True
+        elif el.tag == "all_section" and in_all_section:
+            in_all_section = False
+        elif in_all_section:
+            if 'el.tag' in c.keys():
+                c['el.tag'] += 1
+            else:
+                c['el.tag'] = 1
+    return c
+
+def counts_per_twocall_window(tree):
+    c = Counter()
+    in_all_section = False
+    first = True
+    second = True
+    for el in tree.iter():
+        # ignore everything outside the "all_section" element
+        if el.tag == "all_section" and not in_all_section:
+            in_all_section = True
+        elif el.tag == "all_section" and in_all_section:
+            in_all_section = False
+        elif in_all_section:
+            #make calls into windows of 2
+            if first:
+                firstelem_window = el.tag
+                first = False
+            elif second:
+                secondelem_window = el.tag
+                second = False
+                name = firstelem_window+"-"+secondelem_window
+                if name in c.keys():
+                    c[name] += 1
+                else:
+                    c[name] = 1
+            else:
+                firstelem_window = secondelem_window
+                secondelem_window = el.tag
+                name = firstelem_window+"-"+secondelem_window
+                if name in c.keys():
+                    c[name] += 1
+                else:
+                    c[name] = 1
+    return c
+
+def virus_specific_words(tree):
+    c = Counter()
+    in_all_section = False
+    c['NETAPI32.dll.NetUserGetInfo'] = 0
+    c['urlmon.dll'] = 0
+    c['urlmon.dll.URLDownloadToFile'] = 0
+    c['HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft'] = 0
+    c['HKEY_LOCAL_MACHINE\Software\Microsoft'] = 0
+    c['HKEY_LOCAL_MACHINE\Keyboard'] = 0
+    c['HKEY_LOCAL_MACHINE\SOFTWARE\Classes'] = 0
+    c['get_host_by_name'] = 0
+    c['MSVBVM60.DLL'] = 0
+    c['C:\WINDOWS\system32\sdra64.exe'] = +1
+    for el in tree.iter():
+        # ignore everything outside the "all_section" element
+        if el.tag == "all_section" and not in_all_section:
+            in_all_section = True
+        elif el.tag == "all_section" and in_all_section:
+            in_all_section = False
+        elif in_all_section:
+            #autorun
+            if el.tag == 'vm_protect':
+                if 'target' in el.attrib:
+                    if el.get('target') == 'NETAPI32.dll.NetUserGetInfo':
+                        c['NETAPI32.dll.NetUserGetInfo'] = +1
+        
+            #lipler classified as a downloader virus, so has a lot of "urlmon.dll" and "downloadtofile"
+                    elif el.get('target')[:28] == "urlmon.dll.URLDownloadToFile":
+                        c['urlmon.dll.URLDownloadToFile'] = +1
+                    elif el.get('target')[:10] == 'urlmon.dll':
+                        c['urlmon.dll'] = +1
+                    
+            #magania --> password stealing virus, so uses cryptography in software class.
+            elif el.tag == 'open_key':
+                if 'key' in el.attrib:
+                    if el.get('key')[:37] == 'HKEY_LOCAL_MACHINE\Software\Microsoft':
+                        c['HKEY_LOCAL_MACHINE\Software\Microsoft'] = +1
+                    elif el.get('key')[:26] == 'HKEY_CURRENT_USER\Keyboard':
+                        c['HKEY_LOCAL_MACHINE\Keyboard'] = +1
+            elif el.tag == 'query_value':
+                if 'key' in el.attrib:
+                    if el.get('key')[:36] == 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft':
+                        c['HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft'] = +1
+
+            
+            #swizzor https://www.microsoft.com/en-us/wdsi/threats/malware-encyclopedia-description?Name=TrojanDownloader%3AWin32%2FSwizzor
+            if el.tag == 'query_value':
+                if 'key' in el.attrib:
+                    if el.get('key')[:35] == 'HKEY_LOCAL_MACHINE\SOFTWARE\Classes':
+                        c['HKEY_LOCAL_MACHINE\SOFTWARE\Classes'] = +1
+            elif el.tag == 'get_host_by_name':
+                c['get_host_by_name'] = +1
+                
+            #VB virus if it has MSVBVM60.DLL it is a VB virus. http://resources.infosecinstitute.com/anatomy-of-a-vb-virus/#gref
+            elif el.tag == 'load_dll':
+                if el.get('filename') == 'C:\WINDOWS\system32\MSVBVM60.DLL':
+                    c['MSVBVM60.DLL'] = 1
+                    
+            #zbot creates copy of itself https://www.symantec.com/security_response/writeup.jsp?docid=2010-011016-3514-99&tabid=2
+            elif el.tag == 'delete_file':
+                if el.get('srcfile') == "C:\WINDOWS\system32\sdra64.exe":
+                    c['C:\WINDOWS\system32\sdra64.exe'] = +1
+                    
+    return c
+    
+
 ## The following function does the feature extraction, learning, and prediction
 def main():
     train_dir = "train"
@@ -235,7 +351,7 @@ def main():
     outputfile = "sample_predictions.csv"  # feel free to change this or take it as an argument
     
     # TODO put the names of the feature functions you've defined above in this list
-    ffs = [first_last_system_call_feats, system_call_count_feats]
+    ffs = [first_last_system_call_feats, system_call_count_feats, counts_per_call, counts_per_twocall_window, virus_specific_words]
     
     # extract features
     print "extracting training features..."
