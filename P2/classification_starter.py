@@ -75,6 +75,13 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import numpy as np
 from scipy import sparse
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn import grid_search
+from sklearn.grid_search import ParameterGrid
 
 import util
 
@@ -407,7 +414,7 @@ def main():
     print
 
     # Logistic Regression Model
-    print "learning logistis regression model..."
+    print "learning logistic regression model..."
     lr_parameters = {'cv': range(3,11), 'fit_intercept':[True, False], 'penalty': ['l2']}
     lr = grid_search.GridSearchCV(LogisticRegressionCV(), lr_parameters)
     lr.fit(X_train, t_train)
@@ -420,6 +427,35 @@ def main():
     print "train score:", lr.score(X_train,t_train)
     print "validation score:", lr.score(X_valid,t_valid)
     print "done learning logistic regression"
+    print
+
+    # SVM Model
+    print 'learning svm model...'
+    svm_parameters = {'C':[.25, .5, 1, 2, 5]}
+    svm = grid_search.GridSearchCV(SVC(), svm_parameters)
+    svm.fit(X_train, t_train)
+
+    print 'SVM Hyperparameters'
+    print '  C values:', svm.best_estimator_.C
+    print '-----'
+    print 'train score:', svm.score(X_train,t_train)
+    print 'validation score:', svm.score(X_valid,t_valid)
+    print 'done learning svm'
+    print
+
+    # NN Model
+    print 'learning nn model...'
+    nn_parameters = {'activation': ['identity','logistic','tanh','relu'], 'alpha': [.0001, .0001, .001, .01, .1, 1]}
+    nn = grid_search.GridSearchCV(MLPClassifier(), nn_parameters)
+    nn.fit(X_train, t_train)
+
+    print 'NN Hyperparameters'
+    print '  activation function:', nn.best_estimator_.activation
+    print '  loss coefficient (alpha value):', nn.best_estimator_.alpha
+    print '-----'
+    print 'train score:', nn.score(X_train,t_train)
+    print 'validation score:', nn.score(X_valid,t_valid)
+    print 'done learning nn'
     print
     
     # get rid of training data and load test data
@@ -436,6 +472,8 @@ def main():
     knn_preds = knn.predict(X_test)
     rf_preds = rf.predict(X_test)
     lr_preds = lr.predict(X_test)
+    svm_preds = svm.predict(X_test)
+    nn_preds = nn.predict(X_test)
     print "done making predictions"
     print
     
@@ -443,6 +481,8 @@ def main():
     util.write_predictions(knn_preds, test_ids, "knn_predictions.csv")
     util.write_predictions(rf_preds, test_ids, "rf_predictions.csv")
     util.write_predictions(lr_preds, test_ids, "lr_predictions.csv")
+    util.write_predictions(svm_preds, test_ids, "svm_predictions.csv")
+    util.write_predictions(nn_preds, test_ids, "nn_predictions.csv")
     print "done!"
 
 if __name__ == "__main__":
