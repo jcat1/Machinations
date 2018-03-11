@@ -225,7 +225,10 @@ def system_call_count_feats(tree):
         elif el.tag == "all_section" and in_all_section:
             in_all_section = False
         elif in_all_section:
-            c['num_system_calls'] += 1
+            if el.tag not in c:
+                c[el.tag] = 0
+            else:
+                c[el.tag] += 1
     return c
 
 def counts_per_call(tree):
@@ -290,7 +293,7 @@ def virus_specific_words(tree):
     c['HKEY_LOCAL_MACHINE\SOFTWARE\Classes'] = 0
     c['get_host_by_name'] = 0
     c['MSVBVM60.DLL'] = 0
-    c['C:\WINDOWS\system32\sdra64.exe'] = +1
+    c['C:\WINDOWS\system32\sdra64.exe'] = 0
     for el in tree.iter():
         # ignore everything outside the "all_section" element
         if el.tag == "all_section" and not in_all_section:
@@ -358,11 +361,65 @@ def main():
     X_train,global_feat_dict,t_train,train_ids = extract_feats(ffs, train_dir)
     print "done extracting training features"
     print
+
+    # split data into train and validation sets
+    print "spliting data into train and validation..."
+    np.random.seed(9001)
+    msk = np.random.rand(X_train.shape[0]) < 0.85
+    X_train, X_valid = X_train[msk], X_train[~msk]
+    t_train, t_valid = t_train[msk], t_train[~msk]
+    print "done splitting"
+    print
     
     # TODO train here, and learn your classification parameters
-    print "learning..."
-    learned_W = np.random.random((len(global_feat_dict),len(util.malware_classes)))
-    print "done learning"
+
+    # kNN Model
+    print "learning kNN model..."
+    knn_parameters = {'n_neighbors': range(1,21) + [25, 50, 100, 150], 'weights': ['uniform','distance'], 'p':[1, 2]}
+    knn = grid_search.GridSearchCV(KNeighborsClassifier(), knn_parameters)
+    knn.fit(X_train, t_train)
+
+    print "kNN Hyperparameters"
+    print "  n neighbors:", knn.best_estimator_.n_neighbors
+    print "  weights:", knn.best_estimator_.weights
+    print "  Minkowski power:", knn.best_estimator_.p
+    print "-----"
+    print "train score:", knn.score(X_train,t_train)
+    print "validations score:", knn.score(X_valid,t_valid)
+    print "done learning knn"
+    print
+
+    # Random Forest Model
+    print "learning random forest model..."
+    rf_parameters = {'n_estimators': [50, 500, 750, 1000], 'max_features': ['sqrt', 'log2', None], 'max_depth': [4, 25, 50, None], 'class_weight': ['balanced', None]}
+    rf = grid_search.GridSearchCV(RandomForestClassifier(), rf_parameters)
+    rf.fit(X_train, t_train)
+
+    print "RF Hyperparameters"
+    print "  n trees:", rf.best_estimator_.n_estimators
+    print "  max depth:", rf.best_estimator_.max_depth
+    print "  max features:", rf.best_estimator_.max_features
+    print "  class weight:", rf.best_estimator_.class_weight
+    print "-----"
+    print "train score:", rf.score(X_train,t_train)
+    print "validation score:", rf.score(X_valid,t_valid)
+    print "done learning random forest"
+    print
+
+    # Logistic Regression Model
+    print "learning logistis regression model..."
+    lr_parameters = {'cv': range(3,11), 'fit_intercept':[True, False], 'penalty': ['l2']}
+    lr = grid_search.GridSearchCV(LogisticRegressionCV(), lr_parameters)
+    lr.fit(X_train, t_train)
+
+    print "LR Hyperparameters"
+    print "  k CV folds:", lr.best_estimator_.cv
+    print "  fit intercept:", lr.best_estimator_.fit_intercept
+    print "  penalty:", lr.best_estimator_.penalty
+    print "-----"
+    print "train score:", lr.score(X_train,t_train)
+    print "validation score:", lr.score(X_valid,t_valid)
+    print "done learning logistic regression"
     print
     
     # get rid of training data and load test data
@@ -376,12 +433,16 @@ def main():
     
     # TODO make predictions on text data and write them out
     print "making predictions..."
-    preds = np.argmax(X_test.dot(learned_W),axis=1)
+    knn_preds = knn.predict(X_test)
+    rf_preds = rf.predict(X_test)
+    lr_preds = lr.predict(X_test)
     print "done making predictions"
     print
     
     print "writing predictions..."
-    util.write_predictions(preds, test_ids, outputfile)
+    util.write_predictions(knn_preds, test_ids, "knn_predictions.csv")
+    util.write_predictions(rf_preds, test_ids, "rf_predictions.csv")
+    util.write_predictions(lr_preds, test_ids, "lr_predictions.csv")
     print "done!"
 
 if __name__ == "__main__":
