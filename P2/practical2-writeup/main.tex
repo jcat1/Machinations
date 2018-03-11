@@ -13,7 +13,7 @@ Camelot.ai usernames (Team Machine\_learners): emchen, jcat1, kevin}
 
 \section{Technical Approach}
 
-To construct and test our models, we first split the given ``training" data set in two, yielding a training and a validation set. This new training set comprised roughly 85\% of the original data set, and the remaining 15\% became the validation set, on which we evaluated the different models.
+To construct and evaluate our models, we first split the given ``training" data set in two, yielding a training and a validation set. This new training set comprised roughly 85\% of the original data set, and the remaining 15\% became the validation set, on which we evaluated the different models.
 
 \begin{center}
       \textbf{First Iteration}
@@ -45,13 +45,13 @@ To construct and test our models, we first split the given ``training" data set 
       \end{itemize}
       Here, we perform cross-validation while constructing our model, and select 4-fold cross-validation as the optimal process. We also include a bias term in our weights and employ $L_2$ regularization to encourage weights of smaller magnitude as a means of preventing overfitting and making the model more generalizable to new data.
       
-      \item Naive Bayes/Bayesian Naive Bayes (Model 4/5): toggled smoothing and prior
+      \item Naive Bayes/Bayesian Naive Bayes (Model 4/5): We iterated through various powers of 10 for the smoothing parameter and toggled between uniform and empirical class priors.
       \begin{itemize}
-          \item Smoothing parameter
-          \item Uniform prior or given frequencies (then it becomes a Dirichlet-Multinomial model, can be solved in closed form $\rightarrow$ training and predicting is very fast)
+          \item The optimal smoothing parameter was 0.000001.
+          \item Adding in prior information did not change the accuracy significantly.
       \end{itemize}
       
-      \item Support Vector Machine (Model 6): We iterated through the $C=0.25, 0.5, 1, 2, 5$ to maximize the accuracy score on our validation set and found the optiaml value was $C=2$.
+      \item Support Vector Machine (Model 6): We iterated through the $C=0.25, 0.5, 1, 2, 5$ to maximize the accuracy score on our validation set and found the optimal value was $C=2$.
       
       \item Neural Network (Model 7): We iterated through the following hyperparameter values:
       \begin{itemize}
@@ -152,13 +152,13 @@ After training this model and using it to make predictions on the given test set
 
 % Kevin: wow 19/20 is really good...Something extra I can add: a plot on comparing learning rates of the various models (cross-validated error vs. sample size)
 
-In summary, our search for the best model included multiple different classes of models, both non-parametric and parametric. We found that the best model was the Random Forest (with 1000 trees of max depth 50) model, tested on the validation set (which we had separated from the original given training set). This gave us a validation accuracy score of 0.89301 and Camelot test accuracy score of 0.81368, bringing us over both the Most Frequent Class and Bigrams baselines. We then turned to feature engineering in hopes of further improving our score.
+In summary, our search for the best model included multiple different classes of models, both non-parametric and parametric. We found that the best model was the Random Forest (with 1000 trees of max depth 50) model. This gave us a validation accuracy score of 0.89301 and Camelot test accuracy score of 0.81368, bringing us over both the Most Frequent Class and Bigrams baselines. We then turned to feature engineering in hopes of further improving our score.
     
 Next, we extracted 10 additional features per XML files (see Table 2 above and additional functions added to classification\_starter.py), and ran our models on this extended dataset. Here, the best model was also Random Forest (with 50 trees of max depth 50).This improved our validation accuracy score to 0.90175 and Camelot test accuracy score to our final 0.82105.
 
-One thing we would also look into given more time is the observation that our validation set accuracy scores were higher than the scores we obtained on the Camelot test set (across all models). We do not believe this is an issue of overfitting, as we constructed the validation set to circumvent this. Perhaps there are differences in our validation set due to the random split and the test set, though this would require further investigation.
+One thing we would like to look into next is the observation that our validation set accuracy scores were higher than the scores we obtained on the Camelot test set (across all models). We do not believe this is an issue of overfitting, as we constructed the validation set to circumvent this. This may be due to differences in our validation set due to the random split and the test set.
 
-For future experimentation, our implementation of the Neural Network and k-NN models showed promising results. We would likely want to further explore the Neural Network over the k-NN due to its greater computational efficiency as a parametric model. With further fine-tuning of the parameters and modification of the model, it may become the model with the best results. The accuracy in our second iteration was already 0.88646, very close compared to our random forest of 0.90175.
+For future experimentation, our implementation of the Neural Network and k-NN models showed promising results. The Neural Network seems more viable than k-NN due to its greater computational efficiency. With further fine-tuning of the parameters and modification of the model, it may become the model with the best results. The accuracy in our second iteration was already 0.88646, very close compared to our random forest of 0.90175. Additionally, the Bayesian Naive Bayes model exhibited improved performance with additional features. Since its solution has a closed form, training and predicting with it is very fast. Thus, if runtime is a concern, it would be worthwhile to invest in feature engineering for the Bayesian Naive Bayes model.
  
 
 \end{document}
