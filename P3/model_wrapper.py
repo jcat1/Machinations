@@ -41,10 +41,7 @@ class ModelWrapper:
         print("Training model...")
         self.train(X_train, Y_train)
         print("Done training model.")
-        print("Optimal Hyperparameters:")
-        for p in self.parameters:
-        	# print(p + ":", self.model.best_estimator_.p)
-            print(p)
+        print(self.model.best_estimator_)
         print("-----")
         
         training_error = accuracy_score(self.predict(X_train), Y_train)
