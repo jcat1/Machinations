@@ -40,7 +40,7 @@ class ModelWrapper:
         X_train, X_test, Y_train, Y_test = train_test_split(self.X, self.Y)
         print("Training model...")
         self.train(X_train, Y_train)
-        print("Done training model.")
+        print("Done training model:")
         print(self.model.best_estimator_)
         print("-----")
         
