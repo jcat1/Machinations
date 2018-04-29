@@ -68,29 +68,26 @@ class Learner(object):
         if self.last_reward == None:
             self.last_reward = 0
 
+        print(self.last_state)
         last_state = self.state_transformation(self.last_state)
-
         last_value = np.multiply(self.Q[:,self.last_action], last_state)
+        # print(last_value)
 
-        q0 = np.multiply(self.Q[:,0], self.state_transformation(state))
-        q1 = np.multiply(self.Q[:,1], self.state_transformation(state))
+        q0 = np.sum(np.multiply(self.Q[:,0], self.state_transformation(state)))
+        q1 = np.sum(np.multiply(self.Q[:,1], self.state_transformation(state)))
         new_values = [q0,q1]
-        
+        # print(new_values)
+
         new_action = np.argmax(new_values)
         new_state  = state
 
-
-        test = self.Q[:,self.last_action].shape
-        test1 = (self.eta*(self.last_reward + (self.gamma*new_values[new_action])-last_value)).shape
-        test2 = np.multiply(self.eta*(self.last_reward + (self.gamma*new_values[new_action])-last_value), last_state).shape
-        print(test,test1,test2)
-        self.Q[:,self.last_action] = self.Q[:,self.last_action] + np.multiply(self.eta*(self.last_reward + (self.gamma*new_values[new_action])-last_value), last_state)
+        self.Q[:,self.last_action] = self.Q[:,self.last_action] + np.multiply(self.eta * (self.last_reward + (self.gamma * new_values[new_action]) - last_value), last_state)
         # self.Q[:,self.last_action] = self.Q[:,self.last_action] - self.eta*(self.Q[:,self.last_action] - (self.last_reward+self.gamma*self.Q[:,new_action]))
 
         self.last_action = new_action
         self.last_state  = new_state
 
-        # print(sself.Q)
+        # print(self.Q)
         return new_action
 
     def reward_callback(self, reward):
