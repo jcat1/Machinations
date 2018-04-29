@@ -16,30 +16,34 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
+        self.last_velocity = 0
         
         self.actions = actions
         self.epsilon = epsilon
         self.eta = eta
         self.gamma = gamma
-        self.Q = np.zeros((4,len(actions)))
+        self.Q = np.zeros((9,len(actions)))
 
     def reset(self):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
+        self.last_velocity = 0
 
     # def learnQ(self, state, action, reward, ):
         # self.Q.get((state, action), 0.0)
 
     def state_transformation(self, state):
-        if state == None:
-            state_list = np.zeros(4)
-        else:
-            state_list = [state['monkey']['vel']]
-            state_list.append(state['monkey']['top'])
-            state_list.append(state['tree']['dist'])
-            state_list.append(state['tree']['top'])
-        # states_list.append()
+        state_list = [(state['monkey']['vel']+40.)/(40.+40.)]
+        state_list.append((state['monkey']['top']-57.)/(400.-57.))
+        state_list.append((state['tree']['dist']+120.)/(640.-62.-115.+120.))
+        state_list.append((state['tree']['top']-200.)/(400.-200.))
+        state_list.append((state['monkey']['vel'] - self.last_velocity + 80.)/(80.+80.))
+        state_list.append(state_list[0]*state_list[1])
+        state_list.append(state_list[1]*state_list[4])
+        state_list.append(state_list[2]*state_list[3])
+        state_list.append(state_list[1]*state_list[2])
+        # print(state_list)
         return state_list
 
 
@@ -56,38 +60,39 @@ class Learner(object):
 
 
         if self.last_action == None:
-            self.last_action = random.choice(self.actions)
-        # if self.last_state == None:
-        #     self.last_state = { 'score': 0,
-        #          'tree': { 'dist': 215-swing.monkey_right,
-        #                    'top': self.screen_height-next_tree['y'],
-        #                    'bot': self.screen_height-next_tree['y']-self.tree_gap},
-        #          'monkey': { 'vel': self.vel,
-        #                      'top': self.screen_height - self.monkey_loc + self.monkey_img.get_height()/2,
-        #                      'bot': self.screen_height - self.monkey_loc - self.monkey_img.get_height()/2}} 
+            self.last_action = 0
+        if self.last_state == None:
+            self.last_state = state
         if self.last_reward == None:
             self.last_reward = 0
+        # print(state)
 
-        print(self.last_state)
         last_state = self.state_transformation(self.last_state)
-        last_value = np.multiply(self.Q[:,self.last_action], last_state)
+        last_value = np.sum(np.multiply(self.Q[:,self.last_action], last_state))
+        # print(last_state)
         # print(last_value)
 
         q0 = np.sum(np.multiply(self.Q[:,0], self.state_transformation(state)))
         q1 = np.sum(np.multiply(self.Q[:,1], self.state_transformation(state)))
         new_values = [q0,q1]
         # print(new_values)
-
-        new_action = np.argmax(new_values)
+        
+        if np.random.random_sample() < self.epsilon:
+            new_action = np.random.choice(self.actions)
+        else:
+            new_action = np.argmax(new_values)
         new_state  = state
+        # print(new_state)
 
+        # print(new_values[new_action])
         self.Q[:,self.last_action] = self.Q[:,self.last_action] + np.multiply(self.eta * (self.last_reward + (self.gamma * new_values[new_action]) - last_value), last_state)
         # self.Q[:,self.last_action] = self.Q[:,self.last_action] - self.eta*(self.Q[:,self.last_action] - (self.last_reward+self.gamma*self.Q[:,new_action]))
 
         self.last_action = new_action
         self.last_state  = new_state
+        self.last_velocity = new_state['monkey']['vel']
 
-        # print(self.Q)
+        print(self.Q)
         return new_action
 
     def reward_callback(self, reward):
@@ -124,13 +129,13 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 if __name__ == '__main__':
 
     # Select agent.
-    agent = Learner(actions=[0,1], epsilon=.05, eta=.05, gamma=.05)
+    agent = Learner(actions=[0,1], epsilon=.2, eta=.1, gamma=.99)
 
     # Empty list to save history.
     hist = []
 
     # Run games. 
-    run_games(agent, hist, 20, 10)
+    run_games(agent, hist, 1000, 10)
 
     # Save history. 
     np.save('hist',np.array(hist))
