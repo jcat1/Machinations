@@ -16,7 +16,7 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-        self.last_velocity = 0
+        self.last_velocity = None
         
         self.actions = actions
         self.epsilon = epsilon
@@ -28,7 +28,7 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-        self.last_velocity = 0
+        self.last_velocity = None
 
     # def learnQ(self, state, action, reward, ):
         # self.Q.get((state, action), 0.0)
@@ -65,6 +65,8 @@ class Learner(object):
             self.last_state = state
         if self.last_reward == None:
             self.last_reward = 0
+        if self.last_velocity == None:
+            self.last_velocity = 0
         # print(state)
 
         last_state = self.state_transformation(self.last_state)
@@ -129,13 +131,13 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 if __name__ == '__main__':
 
     # Select agent.
-    agent = Learner(actions=[0,1], epsilon=.2, eta=.1, gamma=.99)
+    agent = Learner(actions=[0,1], epsilon=.05, eta=.2, gamma=.99)
 
     # Empty list to save history.
     hist = []
 
     # Run games. 
-    run_games(agent, hist, 1000, 10)
+    run_games(agent, hist, 1000, 5)
 
     # Save history. 
     np.save('hist',np.array(hist))
