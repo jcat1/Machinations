@@ -7,6 +7,8 @@ import random
 from SwingyMonkey import SwingyMonkey
 
 
+
+# brute force learner
 class Learner(object):
     '''
     This agent jumps randomly.
@@ -35,6 +37,12 @@ class Learner(object):
         if state == None:
             state_list = np.zeros(4)
         else:
+            positions = [0,1,2] # low mid high
+            vels = [-2, -1, 1 ,2] # down or up, fast or slow
+            dists = list(range(6))
+
+            if state['monkey']['top']
+
             state_list = [state['monkey']['vel']]
             state_list.append(state['monkey']['top'])
             state_list.append(state['tree']['dist'])
