@@ -131,7 +131,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 if __name__ == '__main__':
 
     # Select agent.
-    agent = Learner(actions=[0,1], epsilon=.05, eta=.2, gamma=.99)
+    agent = Learner(actions=[0,1], epsilon=.05, eta=.2, gamma=.85)
 
     # Empty list to save history.
     hist = []
