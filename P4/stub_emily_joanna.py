@@ -7,6 +7,8 @@ import random
 from SwingyMonkey import SwingyMonkey
 
 
+
+# brute force learner
 class Learner(object):
     '''
     This agent jumps randomly.
@@ -34,6 +36,19 @@ class Learner(object):
         # self.Q.get((state, action), 0.0)
 
     def state_transformation(self, state):
+        # if state == None:
+        #     state_list = np.zeros(4)
+        # else:
+        #     positions = [0,1,2] # low mid high
+        #     vels = [-2, -1, 1 ,2] # down or up, fast or slow
+        #     dists = list(range(6))
+
+        #     if state['monkey']['top']
+
+        #     state_list = [state['monkey']['vel']]
+        #     state_list.append(state['monkey']['top'])
+        #     state_list.append(state['tree']['dist'])
+        #     state_list.append(state['tree']['top'])
         state_list = [(state['monkey']['vel']+40.)/(40.+40.)]
         state_list.append((state['monkey']['top']-57.)/(400.-57.))
         state_list.append((state['tree']['dist']+120.)/(640.-62.-115.+120.))
@@ -43,7 +58,6 @@ class Learner(object):
         state_list.append(state_list[1]*state_list[4])
         state_list.append(state_list[2]*state_list[3])
         state_list.append(state_list[1]*state_list[2])
-        # print(state_list)
         return state_list
 
 
@@ -58,7 +72,6 @@ class Learner(object):
         # You'll need to select and action and return it.
         # Return 0 to swing and 1 to jump.
 
-
         if self.last_action == None:
             self.last_action = 0
         if self.last_state == None:
@@ -67,34 +80,26 @@ class Learner(object):
             self.last_reward = 0
         if self.last_velocity == None:
             self.last_velocity = 0
-        # print(state)
 
         last_state = self.state_transformation(self.last_state)
         last_value = np.sum(np.multiply(self.Q[:,self.last_action], last_state))
-        # print(last_state)
-        # print(last_value)
 
         q0 = np.sum(np.multiply(self.Q[:,0], self.state_transformation(state)))
         q1 = np.sum(np.multiply(self.Q[:,1], self.state_transformation(state)))
         new_values = [q0,q1]
-        # print(new_values)
         
         if np.random.random_sample() < self.epsilon:
             new_action = np.random.choice(self.actions)
         else:
             new_action = np.argmax(new_values)
         new_state  = state
-        # print(new_state)
 
-        # print(new_values[new_action])
         self.Q[:,self.last_action] = self.Q[:,self.last_action] + np.multiply(self.eta * (self.last_reward + (self.gamma * new_values[new_action]) - last_value), last_state)
-        # self.Q[:,self.last_action] = self.Q[:,self.last_action] - self.eta*(self.Q[:,self.last_action] - (self.last_reward+self.gamma*self.Q[:,new_action]))
 
         self.last_action = new_action
         self.last_state  = new_state
         self.last_velocity = new_state['monkey']['vel']
 
-        print(self.Q)
         return new_action
 
     def reward_callback(self, reward):
